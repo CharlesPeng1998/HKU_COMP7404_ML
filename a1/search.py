@@ -94,10 +94,12 @@ def depthFirstSearch(problem):
                 current_node = nodes_list[current_node[3]]
             break
 
+        # Make sure this is a graph search algorithm 
+        if expand_node[0] in explored_states_set:
+            continue
         explored_states_set.add(expand_node[0])
         successors = problem.getSuccessors(expand_node[0])
         for successor in successors:
-            # Make sure this is graph search algorithm
             if successor[0] in explored_states_set:
                 continue
             successor_node = tuple([successor[0], successor[1], len(nodes_list), expand_node[2]])
@@ -138,6 +140,8 @@ def breadthFirstSearch(problem):
         explored_states_set.add(expand_node[0])
         successors = problem.getSuccessors(expand_node[0])
         for successor in successors:
+            if successor[0] in explored_states_set:
+                continue
             successor_node = tuple([successor[0], successor[1], len(nodes_list), expand_node[2]])
             nodes_list.append(successor_node)
             frontier.push(successor_node)
