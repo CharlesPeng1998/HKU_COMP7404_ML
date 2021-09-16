@@ -110,8 +110,39 @@ def breadthFirstSearch(problem):
     """
     Search the shallowest nodes in the search tree first.
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    from game import Directions
+    frontier = util.Queue()
+    explored_states_set = set()
+    nodes_list = list()
+    actions_list = list()
+
+    start_node = tuple([problem.getStartState(), Directions.STOP, 0, -1])
+    frontier.push(start_node)
+    nodes_list.append(start_node)
+
+    # Start searching
+    while not frontier.isEmpty():
+        expand_node = frontier.pop()
+
+        # If goal arrived, retrieve actions list
+        if problem.isGoalState(expand_node[0]):
+            current_node = expand_node
+            while current_node[3] != -1:
+                actions_list.append(current_node[1])
+                current_node = nodes_list[current_node[3]]
+            break
+
+        # Make sure this is a graph search algorithm 
+        if expand_node[0] in explored_states_set:
+            continue
+        explored_states_set.add(expand_node[0])
+        successors = problem.getSuccessors(expand_node[0])
+        for successor in successors:
+            successor_node = tuple([successor[0], successor[1], len(nodes_list), expand_node[2]])
+            nodes_list.append(successor_node)
+            frontier.push(successor_node)
+
+    return actions_list[::-1]
 
 def uniformCostSearch(problem):
     "Search the node of least total cost first. "
