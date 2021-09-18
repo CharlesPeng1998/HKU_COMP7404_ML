@@ -468,8 +468,32 @@ def foodHeuristic(state, problem):
     Subsequent calls to this heuristic can access problem.heuristicInfo['wallCount']
     """
     position, foodGrid = state
-    "*** YOUR CODE HERE ***"
-    return 0
+
+    # The same idea as in corners heuristic:
+    # Find the total cost of minimum spanning tree
+    # between pacman and the food 
+    from math import hypot
+    vertex_list = [position] + foodGrid.asList()
+    h_value = 0
+    edges = list()
+    reps = [i for i in range(len(vertex_list))]
+    for i in range(len(vertex_list)):
+        for j in range(i + 1, len(vertex_list)):
+            dis = hypot(vertex_list[i][0] - vertex_list[j][0], vertex_list[i][1] - vertex_list[j][1])
+            edges.append((dis, i, j))
+    edges.sort()
+    cnt = 0
+    for cost, i, j in edges:
+        if reps[i] != reps[j]:
+            cnt += 1
+            h_value += cost
+            if cnt == len(vertex_list) - 1:
+                break
+            rep_i, rep_j = reps[i], reps[j]
+            for k in range(len(reps)):
+                if reps[k] == rep_j:
+                    reps[k] = rep_i
+    return h_value 
 
 class ClosestDotSearchAgent(SearchAgent):
     "Search for all food using a sequence of searches"
