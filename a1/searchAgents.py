@@ -347,8 +347,38 @@ def cornersHeuristic(state, problem):
     corners = problem.corners # These are the corner coordinates
     walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
 
-    "*** YOUR CODE HERE ***"
-    return 0 # Default to trivial solution
+    # Find the shortest path cost to visit all corners
+    # without considering the wall (which is a minimum spanning tree)
+    # based on Kruscal algorithm
+    from math import hypot
+    position = state[0]
+    corners_visited = state[1]
+    vertex_list = [position]
+    h_value = 0
+    for i in range(len(corners)):
+        if not corners_visited[i]:
+            vertex_list.append(corners[i])
+
+    edges = list()
+    reps = [i for i in range(len(vertex_list))]
+    for i in range(len(vertex_list)):
+        for j in range(i + 1, len(vertex_list)):
+            dis = hypot(vertex_list[i][0] - vertex_list[j][0], vertex_list[i][1] - vertex_list[j][1])
+            edges.append((dis, i, j))
+    edges.sort()
+    cnt = 0
+    for cost, i, j in edges:
+        if reps[i] != reps[j]:
+            cnt += 1
+            h_value += cost
+            if cnt == len(vertex_list) - 1:
+                break
+            rep_i, rep_j = reps[i], reps[j]
+            for k in range(len(reps)):
+                if reps[k] == rep_j:
+                    reps[k] = rep_i
+
+    return h_value
 
 class AStarCornersAgent(SearchAgent):
     "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
