@@ -96,7 +96,6 @@ class Board:
 
     def getBetterBoard(self):
         """
-        "*** YOUR CODE HERE ***"
         This function should return a tuple containing containing four values
         the new Board object, the new number of attacks, 
         the Column and Row of the new queen  
@@ -104,7 +103,26 @@ class Board:
             return (betterBoard, minNumOfAttack, newRow, newCol)
         The datatype of minNumOfAttack, newRow and newCol should be int
         """
-        util.raiseNotDefined()
+        current_attacks = self.getNumberOfAttacks()
+        better_board, min_num_attacks, new_col, new_row = copy.deepcopy(self), current_attacks, None, None
+        for col in range(8):
+            for row in range(8):
+                if self.squareArray[row][col] == 1:
+                    self.squareArray[row][col] = 0
+                    for rr in range(8):
+                        if rr != row:
+                            self.squareArray[rr][col] = 1
+                            num_attacks = self.getNumberOfAttacks()
+                            if num_attacks < min_num_attacks:
+                                better_board = copy.deepcopy(self)
+                                min_num_attacks = num_attacks
+                                new_col = col
+                                new_row = rr
+                            self.squareArray[rr][col] = 0
+                    self.squareArray[row][col] = 1
+        
+        return (better_board, min_num_attacks, new_row, new_col)
+
 
     def getNumberOfAttacks(self):
         """
