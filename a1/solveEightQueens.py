@@ -108,11 +108,22 @@ class Board:
 
     def getNumberOfAttacks(self):
         """
-        "*** YOUR CODE HERE ***"
         This function should return the number of attacks of the current board
         The datatype of the return value should be int
         """
-        util.raiseNotDefined()
+        cnt = 0
+        for col in range(8):
+            for row in range(8):
+                if self.squareArray[row][col] == 1:
+                    for i in range(col + 1, 8):
+                        if self.squareArray[row][i] == 1:
+                            cnt += 1
+                        if row - i + col >= 0 and self.squareArray[row - i + col][i] == 1:
+                            cnt += 1
+                        if row + i - col < 8 and self.squareArray[row + i - col][i] == 1:
+                            cnt += 1
+        return cnt
+
 
 if __name__ == "__main__":
     #Enable the following line to generate the same random numbers (useful for debugging)
