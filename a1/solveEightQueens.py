@@ -42,9 +42,14 @@ class SolveEightQueens:
                 print("# attacks: %s" % str(newBoard.getNumberOfAttacks()))
                 print(newBoard.getCostBoard().toString(True))
             currentNumberOfAttacks = newBoard.getNumberOfAttacks()
+            if currentNumberOfAttacks == 0:
+                break
             (newBoard, newNumberOfAttacks, newRow, newCol) = newBoard.getBetterBoard()
-            i += 1
             if currentNumberOfAttacks <= newNumberOfAttacks:
+                i += 1
+            else:
+                i = 0
+            if i > 100:
                 break
         return newBoard
 
@@ -103,27 +108,49 @@ class Board:
             return (betterBoard, minNumOfAttack, newRow, newCol)
         The datatype of minNumOfAttack, newRow and newCol should be int
         """
-        current_attacks = self.getNumberOfAttacks()
-        better_board, min_num_attacks, new_col, new_row = copy.deepcopy(self), current_attacks, None, None
-        for col in range(8):
-            for row in range(8):
-                if self.squareArray[row][col] == 1:
-                    self.squareArray[row][col] = 0
-                    for rr in range(8):
-                        if rr != row:
-                            self.squareArray[rr][col] = 1
-                            num_attacks = self.getNumberOfAttacks()
-                            if num_attacks < min_num_attacks:
-                                better_board = copy.deepcopy(self)
-                                min_num_attacks = num_attacks
-                                new_col = col
-                                new_row = rr
-                            self.squareArray[rr][col] = 0
-                    self.squareArray[row][col] = 1
+        # current_attacks = self.getNumberOfAttacks()
+        # better_board, min_num_attacks, new_col, new_row = copy.deepcopy(self), current_attacks, None, None
+        # candidate_move = []
+        # for col in range(8):
+        #     for row in range(8):
+        #         if self.squareArray[row][col] == 1:
+        #             self.squareArray[row][col] = 0
+        #             for rr in range(8):
+        #                 if rr != row:
+        #                     self.squareArray[rr][col] = 1
+        #                     num_attacks = self.getNumberOfAttacks()
+        #                     if num_attacks < min_num_attacks:
+        #                         better_board = copy.deepcopy(self)
+        #                         min_num_attacks = num_attacks
+        #                         new_col = col
+        #                         new_row = rr
+        #                     self.squareArray[rr][col] = 0
+        #             self.squareArray[row][col] = 1
         
-        return (better_board, min_num_attacks, new_row, new_col)
+        # return (better_board, min_num_attacks, new_row, new_col)
+        current_num_attacks = self.getNumberOfAttacks() 
+        cost_board = self.getCostBoard().squareArray
+        min_num_attacks = 9999
+        for row in range(8):
+            for col in range(8):
+                if cost_board[row][col] < min_num_attacks:
+                    min_num_attacks = cost_board[row][col]
 
+        candidate_move = list()
+        for row in range(8):
+            for col in range(8):
+                if cost_board[row][col] == min_num_attacks:
+                    candidate_move.append((row, col))
 
+        new_row, new_col = random.choice(candidate_move) 
+        new_board = copy.deepcopy(self)
+        for row in range(8):
+            if new_board.squareArray[row][new_col] == 1:
+                new_board.squareArray[row][new_col] = 0
+                new_board.squareArray[new_row][new_col] = 1
+                break
+        return (new_board, min_num_attacks, new_row, new_col)
+        
     def getNumberOfAttacks(self):
         """
         This function should return the number of attacks of the current board
@@ -140,6 +167,7 @@ class Board:
                             cnt += 1
                         if row + i - col < 8 and self.squareArray[row + i - col][i] == 1:
                             cnt += 1
+                    break 
         return cnt
 
 
