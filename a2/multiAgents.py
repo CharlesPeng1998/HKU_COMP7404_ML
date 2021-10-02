@@ -185,10 +185,65 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
           Returns the minimax action using self.depth and self.evaluationFunction
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        alpha, beta = -999999, 999999
+        _, action = self.maxValue(gameState, self.depth, alpha, beta)
         
+        return action 
+    
+    def maxValue(self, gameState, depth, alpha, beta):
+      if depth <= 0:
+        return (self.evaluationFunction(gameState), None)
+      if gameState.isWin() or gameState.isLose():
+        return (self.evaluationFunction(gameState), None)
 
+      legal_actions = gameState.getLegalActions(0)
+      best_value = -999999
+      best_action = None
+
+      for action in legal_actions:
+        next_state = gameState.generateSuccessor(0, action)
+        if gameState.getNumAgents() == 1:
+          value, _ = self.maxValue(next_state, depth - 1, alpha, beta)
+        else:
+          value, _ = self.minValue(next_state, 1, depth, alpha, beta)
+
+        if value > best_value:
+          best_value = value
+          best_action = action
+
+        if best_value > beta:
+          return (best_value, best_action)
+        alpha = max(best_value, alpha)
+      
+      return (best_value, best_action)
+      
+    def minValue(self, gameState, agentIndex, depth, alpha, beta):
+      if depth <= 0:
+        return (self.evaluationFunction(gameState), None)
+      if gameState.isWin() or gameState.isLose():
+        return (self.evaluationFunction(gameState), None)
+
+      legal_actions = gameState.getLegalActions(agentIndex)
+      best_value = 999999
+      best_action = None
+      
+      for action in legal_actions:
+        next_state = gameState.generateSuccessor(agentIndex, action)
+        if agentIndex == gameState.getNumAgents() - 1:
+          value, _ = self.maxValue(next_state, depth - 1, alpha, beta)
+        else:
+          value, _ = self.minValue(next_state, agentIndex + 1, depth, alpha, beta)
+
+        if value < best_value:
+          best_value = value
+          best_action = action        
+
+        if best_value < alpha:
+          return (best_value, best_action)
+        beta = min(best_value, beta)
+      
+      return (best_value, best_action) 
+      
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
       Your expectimax agent (question 4)
