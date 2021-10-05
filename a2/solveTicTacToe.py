@@ -83,6 +83,15 @@ class GameState:
         print(boardTitle)
         print(boardsString)
 
+        # Debug
+        agent = TicTacToeAgent()
+        product = MonoidValue(0, 0, 0, 0)
+        for board in self.boards:
+            value = agent.getBoardMisereQuotient(board)
+            product = product * value
+            print("value = {}".format(value))
+        print("product = {}, is in P = {}".format(product, agent.isP_Position(self)))
+
 
 class GameRules:
     """
@@ -198,15 +207,12 @@ def rotateBoard(board):
     """
     Rotate given board for 90 degrees.
     """
-    new_board = copy.deepcopy(board)
     for i in range(3):
         for j in range(i):
-            new_board[i * 3 + j], new_board[j * 3 + i] = new_board[j * 3 + i], new_board[i * 3 + j]
+            board[i * 3 + j], board[j * 3 + i] = board[j * 3 + i], board[i * 3 + j]
     
     for j in range(3):
-        new_board[j], new_board[2 * 3 + j] = new_board[2 * 3 + j], new_board[j] 
-    
-    return new_board
+        board[j], board[2 * 3 + j] = board[2 * 3 + j], board[j] 
 
 def rightLeftFlipBoard(board):
     """
@@ -252,8 +258,9 @@ class TicTacToeAgent():
 
     @staticmethod
     def getBoardMisereQuotient(board):
+        rot_board = copy.deepcopy(board)
         for i in range(4):
-            rot_board = rotateBoard(board)
+            rotateBoard(rot_board)
             for j in range(3):
                 if j == 0:
                     test_board = rot_board
@@ -261,7 +268,7 @@ class TicTacToeAgent():
                     test_board = rightLeftFlipBoard(rot_board)
                 elif j == 2:
                     test_board = upDownFlipBoard(rot_board)
-
+                
                 if test_board == [False, False, False, False, False, False, False, False, False]:
                     return MonoidValue(0, 0, 1, 0)
                 elif test_board == [False, False, False, False, True, False, False, False, False]:
@@ -362,65 +369,15 @@ class TicTacToeAgent():
             return True
         else:
             return False
-    
-    def evaluation(self, gameState, gameRules, max_player_turn):
-        game_over = gameRules.isGameOver(gameState.boards)
-        is_p_position = self.isP_Position(gameState)
-
-        if max_player_turn:  # if it is Max's turn
-            if game_over:
-                return 100 
-            if is_p_position:
-                return -10
-            else:
-                return 5 
-        else:  # if it is Min's turn
-            if game_over:
-                return -100 
-            if is_p_position:
-                return 10
-            else:
-                return -5 
-
-    def maxSearch(self, gameState, gameRules, depth):
-        if depth == self.max_depth:
-            return (self.evaluation(gameState, gameRules, True), None)
-        if gameRules.isGameOver(gameState.boards):
-            return (self.evaluation(gameState, gameRules, True), None)
-        
-        legal_actions = gameState.getLegalActions(gameRules)
-        best_value = -999999
-        best_action = None
-
-        for action in legal_actions:
-            next_state = gameState.generateSuccessor(action)
-            value = self.minSearch(next_state, gameRules, depth)
-
-            if value > best_value:
-                best_value = value
-                best_action = action
-        
-        return (best_value, best_action)
-    
-    def minSearch(self, gameState, gameRules, depth):
-        if gameRules.isGameOver(gameState.boards):
-            return self.evaluation(gameState, gameRules, False)
-        
-        legal_actions = gameState.getLegalActions(gameRules)
-        best_value = 999999
-
-        for action in legal_actions:
-            next_state = gameState.generateSuccessor(action)
-            value, _ = self.maxSearch(next_state, gameRules, depth + 1)
-
-            if value < best_value:
-                best_value = value
-
-        return best_value
 
     def getAction(self, gameState, gameRules):
-        _, best_action = self.maxSearch(gameState, gameRules, 1)
-        return best_action
+        legal_actions = gameState.getLegalActions(gameRules)
+        for action in legal_actions:
+            next_state = gameState.generateSuccessor(action)
+            if self.isP_Position(next_state):
+                return action
+        
+        return random.choice(legal_actions)
 
 
 class randomAgent():
@@ -522,22 +479,11 @@ class Game():
 
 def test():
     agent = TicTacToeAgent()
-    test_num = 5
-    for i in range(test_num):
-        print('Test {}'.format(i))
-        boards = list()
-        for i in range(3):
-            board = [random.choice([True, False, False]) for i in range(9)]
-            boards.append(board)
+    board = [True, True, False, False, True, False, True, False, False]
+    value = agent.getBoardMisereQuotient(board)
+    print("value = {}".format(value))
 
-        for k in range(len(boards)): 
-            quotient = agent.getBoardMisereQuotient(boards[k])
-            print('board{} = {}, quotient = {}'.format(k, boards[k], quotient))
-        
-        game_state = GameState()
-        game_state.boards = boards
-        print("The boards are P = {}".format(agent.isP_Position(game_state)))
-        print("--------------------------------------------------")
+    
 
 
 if __name__ == "__main__":
