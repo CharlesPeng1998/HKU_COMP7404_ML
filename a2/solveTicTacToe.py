@@ -7,6 +7,7 @@
 #################################################################################
 
 import copy
+from warnings import simplefilter
 import util 
 import sys
 import random
@@ -82,6 +83,16 @@ class GameState:
         print(boardTitle)
         print(boardsString)
 
+        # Debug
+        agent = TicTacToeAgent()
+        product = MonoidValue(0, 0, 0, 0)
+        for board in self.boards:
+            value = agent.getBoardMisereQuotient(board)
+            product = product * value
+            print("value = {}".format(value))
+        print("product = {}, is in P = {}".format(product, agent.isP_Position(self)))
+
+
 class GameRules:
     """
       This class defines the rules in 3-Board Misere Tic-Tac-Toe. 
@@ -118,6 +129,110 @@ class GameRules:
         """
         return self.deadTest(boards[0]) and self.deadTest(boards[1]) and self.deadTest(boards[2])
 
+class MonoidValue():
+    """
+    THe misere quotient of a certain layout of tic-tac-toe board.
+    """
+    def __init__(self, pow_a, pow_b, pow_c, pow_d):
+        self.pow_a = pow_a
+        self.pow_b = pow_b
+        self.pow_c = pow_c
+        self.pow_d = pow_d
+        self.simplify()
+    
+    def __mul__(self, other):
+        if isinstance(other, MonoidValue):
+            ret = MonoidValue(self.pow_a + other.pow_a, self.pow_b + other.pow_b,
+                              self.pow_c + other.pow_c, self.pow_d + other.pow_d)
+            ret.simplify()
+            return ret
+        else:
+            raise ValueError("Incorrect operand type for '*' operator!") 
+    
+    def __eq__(self, other):
+        if isinstance(other, MonoidValue):
+            return (self.pow_a == other.pow_a and self.pow_b == other.pow_b and self.pow_c == other.pow_c and self.pow_d == other.pow_d)
+        else:
+            raise ValueError("Incorrect operand type for '==' operator!")
+    
+    def __str__(self):
+        """
+        For print debug.
+        """
+        if self.pow_a == 0 and self.pow_b == 0 and self.pow_c == 0 and self.pow_d == 0:
+            return "1"
+        ret = ""
+        if self.pow_a != 0:
+            ret += "a{}".format(self.pow_a)
+        if self.pow_b != 0:
+            ret += "b{}".format(self.pow_b)
+        if self.pow_c != 0:
+            ret += "c{}".format(self.pow_c)
+        if self.pow_d != 0:
+            ret += "d{}".format(self.pow_d)
+        return ret
+    
+    def simplify(self):
+        while True:
+            simplified = False
+            if self.pow_a >= 2:
+                self.pow_a -= 2
+                simplified = True
+            if self.pow_b >= 3:
+                self.pow_b -= 2
+                simplified = True
+            if self.pow_b >=2 and self.pow_c >= 1:
+                self.pow_b -= 2
+                simplified = True
+            if self.pow_c >= 3:
+                self.pow_c -= 1
+                self.pow_a += 1
+                simplified = True
+            if self.pow_b >= 2 and self.pow_d >= 1:
+                self.pow_b -= 2
+                simplified = True
+            if self.pow_c >= 1 and self.pow_d >= 1:
+                self.pow_c -= 1
+                self.pow_a += 1
+                simplified = True
+            if self.pow_d >= 2:
+                self.pow_d -= 2
+                self.pow_c += 2
+                simplified = True
+            
+            if not simplified:
+                break
+
+def rotateBoard(board):
+    """
+    Rotate given board for 90 degrees.
+    """
+    for i in range(3):
+        for j in range(i):
+            board[i * 3 + j], board[j * 3 + i] = board[j * 3 + i], board[i * 3 + j]
+    
+    for j in range(3):
+        board[j], board[2 * 3 + j] = board[2 * 3 + j], board[j] 
+
+def rightLeftFlipBoard(board):
+    """
+    Right-left flip the board.
+    """
+    new_board = copy.deepcopy(board)
+    for i in range(3):
+        new_board[i * 3], new_board[i * 3 + 2] = new_board[i * 3 + 2], new_board[i * 3]
+    return new_board
+
+def upDownFlipBoard(board):
+    """
+    Up-down flip the board.
+    """
+    new_board = copy.deepcopy(board)
+    for j in range(3):
+        new_board[j], new_board[2 * 3 + j] = new_board[2 * 3 + j], new_board[j] 
+    return new_board
+
+
 class TicTacToeAgent():
     """
       When move first, the TicTacToeAgent should be able to chooses an action to always beat 
@@ -137,10 +252,132 @@ class TicTacToeAgent():
         """ 
           You can initialize some variables here, but please do not modify the input parameters.
         """
-        {}
+        self.p_position_values = [MonoidValue(1, 0, 0, 0), MonoidValue(
+            0, 2, 0, 0), MonoidValue(0, 1, 1, 0), MonoidValue(0, 0, 2, 0)]
+        self.max_depth = 2
+
+    @staticmethod
+    def getBoardMisereQuotient(board):
+        rot_board = copy.deepcopy(board)
+        for i in range(4):
+            rotateBoard(rot_board)
+            for j in range(3):
+                if j == 0:
+                    test_board = rot_board
+                elif j == 1:
+                    test_board = rightLeftFlipBoard(rot_board)
+                elif j == 2:
+                    test_board = upDownFlipBoard(rot_board)
+                
+                if test_board == [False, False, False, False, False, False, False, False, False]:
+                    return MonoidValue(0, 0, 1, 0)
+                elif test_board == [False, False, False, False, True, False, False, False, False]:
+                    return MonoidValue(0, 0, 2, 0)
+                elif test_board == [True, True, False, False, False, False, False, False, False]:
+                    return MonoidValue(1, 0, 0, 1)
+                elif test_board == [True, False, True, False, False, False, False, False, False]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [True, False, False, False, True, False, False, False, False]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [True, False, False, False, False, True, False, False, False]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [True, False, False, False, False, False, False, False, True]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [False, True, False, True, False, False, False, False, False]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [False, True, False, False, True, False, False, False, False]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [False, True, False, False, False, False, False, True, False]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, True, False, True, False, False, False, False, False]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [True, True, False, False, True, False, False, False, False]:
+                    return MonoidValue(1, 1, 0, 0)
+                elif test_board == [True, True, False, False, False, True, False, False, False]:
+                    return MonoidValue(0, 0, 0, 1)
+                elif test_board == [True, True, False, False, False, False, True, False, False]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, True, False, False, False, False, False, True, False]:
+                    return MonoidValue(0, 0, 0, 1)
+                elif test_board == [True, True, False, False, False, False, False, False, True]:
+                    return MonoidValue(0, 0, 0, 1)
+                elif test_board == [True, False, True, False, True, False, False, False, False]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, False, True, False, False, False, True, False, False]:
+                    return MonoidValue(1, 1, 0, 0)
+                elif test_board == [True, False, True, False, False, False, False, True, False]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, False, False, False, True, True, False, False, False]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [False, True, False, True, True, False, False, False, False]:
+                    return MonoidValue(1, 1, 0, 0)
+                elif test_board == [False, True, False, True, False, True, False, False, False]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [True, True, False, True, True, False, False, False, False]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, True, False, True, False, True, False, False, False]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, True, False, True, False, False, False, False, True]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, True, False, False, True, True, False, False, False]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [True, True, False, False, True, False, True, False, False]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [True, True, False, False, False, True, True, False, False]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [True, True, False, False, False, True, False, True, False]:
+                    return MonoidValue(1, 1, 0, 0)
+                elif test_board == [True, True, False, False, False, True, False, False, True]:
+                    return MonoidValue(1, 1, 0, 0)
+                elif test_board == [True, True, False, False, False, False, True, True, False]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [True, True, False, False, False, False, True, False, True]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [True, True, False, False, False, False, False, True, True]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, False, True, False, True, False, False, True, False]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [True, False, True, False, False, False, True, False, True]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, False, False, False, True, True, False, True, False]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [False, True, False, True, False, True, False, True, False]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, True, False, True, False, True, False, False, True]:
+                    return MonoidValue(0, 1, 0, 0)
+                elif test_board == [True, True, False, False, True, True, True, False, False]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, True, False, False, False, True, True, True, False]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, True, False, False, False, True, True, False, True]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, True, False, True, False, True, False, True, True]:
+                    return MonoidValue(1, 0, 0, 0)
+                elif test_board == [True, True, False, True, False, True, False, True, False]:
+                    return MonoidValue(0, 1, 0, 0)
+
+        return MonoidValue(0, 0, 0, 0)
+    
+    def isP_Position(self, gameState):
+        quotient = MonoidValue(0, 0, 0, 0)
+
+        for board in gameState.boards:
+            board_quotient = self.getBoardMisereQuotient(board)        
+            quotient = quotient * board_quotient
+
+        if quotient in self.p_position_values:
+            return True
+        else:
+            return False
 
     def getAction(self, gameState, gameRules):
-        util.raiseNotDefined()
+        legal_actions = gameState.getLegalActions(gameRules)
+        for action in legal_actions:
+            next_state = gameState.generateSuccessor(action)
+            if self.isP_Position(next_state):
+                return action
+        
+        return random.choice(legal_actions)
 
 
 class randomAgent():
@@ -240,6 +477,15 @@ class Game():
         print("\n****Player 1 wins %d/%d games.**** \n" % (numOfWins, self.numOfGames))
 
 
+def test():
+    agent = TicTacToeAgent()
+    board = [True, True, False, False, True, False, True, False, False]
+    value = agent.getBoardMisereQuotient(board)
+    print("value = {}".format(value))
+
+    
+
+
 if __name__ == "__main__":
     """
       main function
@@ -249,7 +495,7 @@ if __name__ == "__main__":
       -a: If specified, the second player will be the randomAgent, otherwise, use keyboardAgent
     """
     # Uncomment the following line to generate the same random numbers (useful for debugging)
-    #random.seed(1)  
+    # random.seed(1)  
     parser = OptionParser()
     parser.add_option("-n", dest="numOfGames", default=1, type="int")
     parser.add_option("-m", dest="muteOutput", action="store_true", default=False)
