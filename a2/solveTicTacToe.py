@@ -248,6 +248,7 @@ class TicTacToeAgent():
         """
         self.p_position_values = [MonoidValue(1, 0, 0, 0), MonoidValue(
             0, 2, 0, 0), MonoidValue(0, 1, 1, 0), MonoidValue(0, 0, 2, 0)]
+        self.max_depth = 2
 
     @staticmethod
     def getBoardMisereQuotient(board):
@@ -356,35 +357,70 @@ class TicTacToeAgent():
         for board in gameState.boards:
             board_quotient = self.getBoardMisereQuotient(board)        
             quotient = quotient * board_quotient
-        
-        print("debug quotient of current game = {}".format(quotient))
+
         if quotient in self.p_position_values:
             return True
         else:
             return False
     
-    def evaluation(self, max_player_turn):
-        # TODO: Implement this evaluation function
-        raise NotImplementedError("'evaluation' is not implemented yet!")
+    def evaluation(self, gameState, gameRules, max_player_turn):
+        game_over = gameRules.isGameOver(gameState.boards)
+        is_p_position = self.isP_Position(gameState)
 
-    def maxSearch(self, gameState, depth):
-        # TODO
-        raise NotImplementedError("'maxSearch' is not implemented yet!")
+        if max_player_turn:  # if it is Max's turn
+            if game_over:
+                return 100 
+            if is_p_position:
+                return -10
+            else:
+                return 5 
+        else:  # if it is Min's turn
+            if game_over:
+                return -100 
+            if is_p_position:
+                return 10
+            else:
+                return -5 
+
+    def maxSearch(self, gameState, gameRules, depth):
+        if depth == self.max_depth:
+            return (self.evaluation(gameState, gameRules, True), None)
+        if gameRules.isGameOver(gameState.boards):
+            return (self.evaluation(gameState, gameRules, True), None)
+        
+        legal_actions = gameState.getLegalActions(gameRules)
+        best_value = -999999
+        best_action = None
+
+        for action in legal_actions:
+            next_state = gameState.generateSuccessor(action)
+            value = self.minSearch(next_state, gameRules, depth)
+
+            if value > best_value:
+                best_value = value
+                best_action = action
+        
+        return (best_value, best_action)
     
-    def minSearch(self, gameState, depth):
-        # TODO
-        raise NotImplementedError("'minSearch' is not implemented yet!")
+    def minSearch(self, gameState, gameRules, depth):
+        if gameRules.isGameOver(gameState.boards):
+            return self.evaluation(gameState, gameRules, False)
+        
+        legal_actions = gameState.getLegalActions(gameRules)
+        best_value = 999999
+
+        for action in legal_actions:
+            next_state = gameState.generateSuccessor(action)
+            value, _ = self.maxSearch(next_state, gameRules, depth + 1)
+
+            if value < best_value:
+                best_value = value
+
+        return best_value
 
     def getAction(self, gameState, gameRules):
-        actions = gameState.getLegalActions(gameRules)
-        optimal_actions = list()
-        
-        for action in actions:
-            next_state = gameState.generateSuccessor(action)
-            if self.isP_Position(next_state):
-                optimal_actions.append(action)
-        
-        return random.choice(optimal_actions)
+        _, best_action = self.maxSearch(gameState, gameRules, 1)
+        return best_action
 
 
 class randomAgent():
@@ -485,13 +521,23 @@ class Game():
 
 
 def test():
-    print("Test board rotation")
-    board = [[1,2,3], [4,5,6],[7,8,9]]
-    print(board)
-    new_board = rightLeftFlipBoard(board)
-    print(new_board)
-    another_new_board = upDownFlipBoard(board)
-    print(another_new_board)
+    agent = TicTacToeAgent()
+    test_num = 5
+    for i in range(test_num):
+        print('Test {}'.format(i))
+        boards = list()
+        for i in range(3):
+            board = [random.choice([True, False, False]) for i in range(9)]
+            boards.append(board)
+
+        for k in range(len(boards)): 
+            quotient = agent.getBoardMisereQuotient(boards[k])
+            print('board{} = {}, quotient = {}'.format(k, boards[k], quotient))
+        
+        game_state = GameState()
+        game_state.boards = boards
+        print("The boards are P = {}".format(agent.isP_Position(game_state)))
+        print("--------------------------------------------------")
 
 
 if __name__ == "__main__":
@@ -503,7 +549,7 @@ if __name__ == "__main__":
       -a: If specified, the second player will be the randomAgent, otherwise, use keyboardAgent
     """
     # Uncomment the following line to generate the same random numbers (useful for debugging)
-    random.seed(1)  
+    # random.seed(1)  
     parser = OptionParser()
     parser.add_option("-n", dest="numOfGames", default=1, type="int")
     parser.add_option("-m", dest="muteOutput", action="store_true", default=False)
