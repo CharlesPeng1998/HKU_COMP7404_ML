@@ -298,10 +298,67 @@ def betterEvaluationFunction(currentGameState):
       Your extreme ghost-hunting, pellet-nabbing, food-gobbling, unstoppable
       evaluation function (question 5).
 
-      DESCRIPTION: <write something here so we know what you did>
+      DESCRIPTION: 
+      In this evaluation function, following values are considered:
+      1. Distance to nearest normal ghost (not scared ghost)
+      2. Distance to nearest scared ghost
+      3. Distance to nearest food
+      4. Number of remaining food
+      5. Number of remaining capsules
+      6. Current game score
+      
+      Note: The distances mentioned above are just Manhattan distance, not
+            the actual distance.
+      
+      The final evaluation value is the linear combination of values above with
+      self-customized coefficient.
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # Return current score if game is over
+    if currentGameState.isWin() or currentGameState.isLose():
+      return currentGameState.getScore()
+    
+    ghost_states = currentGameState.getGhostStates()
+    normal_ghost_states = list()
+    scared_ghost_states = list()
+    for ghost_state in ghost_states:
+      if ghost_state.scaredTimer == 0:
+        normal_ghost_states.append(ghost_state)
+      else:
+        scared_ghost_states.append(ghost_state)
+    
+    pacman_pos = currentGameState.getPacmanPosition()
+    
+    # Distance to nearest normal ghost
+    if normal_ghost_states:
+      dis_normal_ghost = min([manhattanDistance(
+          pacman_pos, ghost_state.getPosition()) for ghost_state in normal_ghost_states])
+    else:
+      dis_normal_ghost = 999999
+
+    # Distance to nearest scared ghost
+    if scared_ghost_states:
+      dis_scared_ghost = min([manhattanDistance(
+          pacman_pos, ghost_state.getPosition()) for ghost_state in scared_ghost_states])
+    else:
+      dis_scared_ghost = 0
+    
+    # Number of remaining food
+    num_food = currentGameState.getNumFood()
+
+    # Distance to nearest remaining food
+    dis_food = min([manhattanDistance(pacman_pos, food_pos)
+                   for food_pos in currentGameState.getFood().asList()])
+    
+    # Number of capsules
+    num_capsule = len(currentGameState.getCapsules())
+
+    # Current game score
+    game_score = currentGameState.getScore()
+
+    value = game_score + (-2 * dis_food) + 1 * dis_normal_ghost + \
+        (-2 * dis_scared_ghost) + (-30 * num_capsule) + (-10 * num_food)
+
+    return value
 
 # Abbreviation
 better = betterEvaluationFunction
