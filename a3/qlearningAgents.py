@@ -38,6 +38,7 @@ class QLearningAgent(ReinforcementAgent):
           or the Q node value otherwise
         """
         if state not in self.q_values:
+          self.q_values[state] = util.Counter()
           return 0.0
         return self.q_values[state][action]
 
@@ -51,9 +52,7 @@ class QLearningAgent(ReinforcementAgent):
         actions = self.getLegalActions(state)
         if len(actions) == 0:
           return 0.0
-        if state not in self.q_values:
-          self.q_values[state] = util.Counter()
-        return max([self.q_values[state][action] for action in actions])
+        return max([self.getQValue(state, action) for action in actions])
 
     def computeActionFromQValues(self, state):
         """
@@ -67,7 +66,7 @@ class QLearningAgent(ReinforcementAgent):
         max_q_value = self.computeValueFromQValues(state)
         candidate_actions = list()
         for action in actions:
-          if self.q_values[state][action] == max_q_value:
+          if self.getQValue(state, action) == max_q_value:
             candidate_actions.append(action)
         return random.choice(candidate_actions)
 
